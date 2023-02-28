@@ -7,7 +7,16 @@ from requests_html import HTMLSession
 STORAGE_DIR=os.path.join(Path.home(), "tmp")
 
 def get_page(url):
-    html_file = os.path.join(STORAGE_DIR,f'{os.path.basename(url)}.html')
+
+    org = url.split("/")[3]
+    repo = url.split("/")[4]
+
+    repo_store = os.path.join(os.path.join(STORAGE_DIR, org), repo)
+
+    if not os.path.exists(repo_store):
+        os.makedirs(repo_store)
+    
+    html_file = os.path.join(repo_store, f'{os.path.basename(url)}.html')
 
     print(f'url: {url} => {html_file}')
     if os.path.exists(html_file):
