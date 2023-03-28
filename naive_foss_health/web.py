@@ -4,6 +4,8 @@ import urllib
 from pathlib import Path
 from requests_html import HTMLSession
 
+import logging
+
 STORAGE_DIR=os.path.join(Path.home(), "tmp")
 
 def get_page(url):
@@ -18,9 +20,9 @@ def get_page(url):
     
     html_file = os.path.join(repo_store, f'{os.path.basename(url)}.html')
 
-    print(f'url: {url} => {html_file}')
+    logging.debug(f'url: {url} => {html_file}')
     if os.path.exists(html_file):
-        print("Use local file")
+        logging.info(f'Use local file for {url}: {html_file}')
         response = urllib.request.urlopen('file://' + html_file, timeout=1)
         html = response.read()
         return html

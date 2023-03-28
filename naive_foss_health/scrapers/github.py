@@ -1,15 +1,18 @@
-from repo_interface import RepoScraper
-from web import get_page
+
+import logging
+import re
 
 import bs4
 from bs4 import BeautifulSoup
 
-import re
+from naive_foss_health.web import get_page
+from naive_foss_health.repo_interface import RepoScraper
+
 
 class GitHubRepoScraper(RepoScraper):
 
     def __init__(self, repo_url):
-        print("GH :)")
+        logging.debug("GH " + repo_url)
         self.repo_url = repo_url.replace("https://github.com","")
         self.index_page = get_page(repo_url)
         self.issues_page = get_page(f'{repo_url}/issues')
@@ -17,29 +20,38 @@ class GitHubRepoScraper(RepoScraper):
         
     
     def scan_repo(self):
-        print("GH scan_repo")
+        logging.debug("GH scan_repo()")
         data = {}
 
         # store raw data
         data['raw'] = {}
-        data['raw']['index'] = self._scan_index_page(self.index_page)
-        data['raw']['pulls'] = self._scan_pulls_page(self.pullrequest_page)
-        data['raw']['issues'] = self._scan_issues_page(self.issues_page)
 
-        # format generically
-        data['stars'] = data['raw']['index']['stars']
-        data['contributors'] = data['raw']['index']['contributors']
-        data['watchers'] = data['raw']['index']['watching']
-        data['releases'] = data['raw']['index']['releases']
-        data['commits'] = data['raw']['index']['commits']
-        data['forks'] = data['raw']['index']['forks']
-        data['tags'] = data['raw']['index']['tags']
-        data['pulls_open'] = data['raw']['pulls']['open']
-        data['pulls_closed'] = data['raw']['pulls']['closed']
-        data['milestones'] = data['raw']['pulls']['milestones']
-        data['labels'] = data['raw']['pulls']['labels']
-        data['issues_open'] = data['raw']['issues']['open']
-        data['issues_closed'] = data['raw']['issues']['closed']
+        # scan/scrape pages
+        index = self._scan_index_page(self.index_page)
+        pulls = self._scan_pulls_page(self.pullrequest_page)
+        issues = self._scan_issues_page(self.issues_page)
+
+        # store raw data
+        data['raw']['index'] = index
+        data['raw']['pulls'] = pulls
+        data['raw']['issues'] = issues
+
+        # create generic structure
+        data['repository'] = self.repo_url
+        data['stars'] = index['stars']
+        data['branch'] = index['branch']
+        data['contributors'] = index['contributors']
+        data['watchers'] = index['watching']
+        data['releases'] = index['releases']
+        data['commits'] = index['commits']
+        data['forks'] = index['forks']
+        data['tags'] = index['tags']
+        data['pulls_open'] = pulls['open']
+        data['pulls_closed'] = pulls['closed']
+        data['milestones'] = pulls['milestones']
+        data['labels'] = pulls['labels']
+        data['issues_open'] = issues['open']
+        data['issues_closed'] = issues['closed']
         
         return data
     
@@ -52,24 +64,24 @@ class GitHubRepoScraper(RepoScraper):
 
         # closed
         href_str = f"{self.repo_url}/issues?q=is%3Apr+is%3Aclosed"
-        closed_str = soup.find_all("a", href=href_str)[1].text
-        _closed = re.sub(r"\s+","", closed_str).replace("Closed", "")
+        closed_str = soup.find_all("a", href=href_str)
+        _closed = self._soup_extract(closed_str, ["Closed"], default=0, regexp=r"\s+")
 
         # open
         href_str = f"{self.repo_url}/issues?q=is%3Aopen+is%3Apr"
-        open_str = soup.find_all("a", href=href_str)[1].text
-        _open = re.sub(r"\s+","", open_str).replace("Open", "")
+        open_str = soup.find_all("a", href=href_str)
+        _open = self._soup_extract(open_str, ["Open"], default=0, regexp=r"\s+")
 
         # milestones
         href_str = f"{self.repo_url}/milestones"
-        milestones_str = soup.find_all("a", href=href_str)[1].text
-        _milestones = re.sub(r"\s+","", milestones_str).replace("Milestones", "")
+        milestones_str = soup.find_all("a", href=href_str)
+        _milestones = self._soup_extract(milestones_str, ["Milestones"], default=0, regexp=r"\s+")
 
         # labels
         href_str = f"{self.repo_url}/labels"
-        labels_str = soup.find_all("a", href=href_str)[1].text
-        _labels = re.sub(r"\s+","", labels_str).replace("Labels", "")
-
+        labels_str = soup.find_all("a", href=href_str)
+        _labels = self._soup_extract(labels_str, ["Labels"], default=0, regexp=r"\s+")
+        
         data['closed'] = _closed
         data['open'] = _open
         data['milestones'] = _milestones
@@ -84,25 +96,23 @@ class GitHubRepoScraper(RepoScraper):
 
         # closed
         href_str = f"{self.repo_url}/issues?q=is%3Aissue+is%3Aclosed"
-        closed_str = soup.find_all("a", href=href_str)[1].text
-        _closed = re.sub(r"\s+","", closed_str).replace("Closed", "")
+        closed_str = soup.find_all("a", href=href_str)
+        _closed = self._soup_extract(closed_str, ["Closed"], default=0, regexp=r"\s+")
 
         # open
         href_str = f"{self.repo_url}/issues?q=is%3Aopen+is%3Aissue"
-        open_str = soup.find_all("a", href=href_str)[1].text
-        _open = re.sub(r"\s+","", open_str).replace("Open", "")
+        open_str = soup.find_all("a", href=href_str)
+        _open = self._soup_extract(open_str, ["Open"], default=0, regexp=r"\s+")
 
         # milestones
         href_str = f"{self.repo_url}/milestones"
         milestones_str = soup.find_all("a", href=href_str)[1].text
-        print("milestones_str: " + milestones_str)
-        _milestones = re.sub(r"\s+","", milestones_str).replace("Milestones", "")
+        _milestones = self._soup_extract(milestones_str, ["Milestones"], default=0, regexp=r"\s+")
 
         # labels
         href_str = f"{self.repo_url}/labels"
         labels_str = soup.find_all("a", href=href_str)[1].text
-        print("labels_str: " + labels_str)
-        _labels = re.sub(r"\s+","", labels_str).replace("Labels", "")
+        _labels = self._soup_extract(labels_str, ["Labels"], default=0, regexp=r"\s+")
 
         data['closed'] = _closed
         data['open'] = _open
@@ -122,47 +132,58 @@ class GitHubRepoScraper(RepoScraper):
                 if len(a.contents) > 3:
                     value = a.contents[3].text
                     variable = a.contents[4].strip()
-                    print(f'       -- value:     {value}')
-                    print(f'       -- variable:  {variable}')
+                    #print(f'       -- value:     {value}')
+                    #print(f'       -- variable:  {variable}')
                     data[variable] = value
 
         alist = soup.find_all("a", id="issues-tab")
-        #print(f' issues :  "{alist[0].text.replace("Issues","").strip()}"')
         data["issues"] = alist[0].text.replace("Issues","").strip()
 
         brlist = soup.find_all("a", href=f"{self.repo_url}/branches")
-        #print(f' Br :  "{brlist[1].text.replace("branches","").strip()}"')
         data["branches"] = brlist[1].text.replace("branches","").strip()
         
         taglist = soup.find_all("a", href=f"{self.repo_url}/tags")
-        #print(f' Tag :  "{taglist[1].text.replace("tags","").replace("tag","").strip()}"')
         data["tags"] = taglist[1].text.replace("tags","").replace("tag","").strip()
         
         rellist = soup.find_all("a", href=f"{self.repo_url}/releases")
-        #print(f' Rel :  "{rellist[0].text.replace("Releases","").strip()}"')
         data["releases"] = rellist[0].text.replace("Releases","").strip()
         
         forklist = soup.find_all("a", href=f"{self.repo_url}/network/members")
-        #print(f' Fork :  "{forklist[1].text.replace("forks","").replace("fork","").strip()}"')
-        data["forks"] = forklist[1].text.replace("forks","").replace("fork","").strip()
+        data["forks"] = self._soup_extract(forklist, ["forks", "fork"])
 
         watchlist = soup.find_all("a", href=f"{self.repo_url}/watchers")
-        #print(f' Watch :  "{watchlist[0].text.replace("watching","").strip()}"')
         data['watchers'] = watchlist[0].text.replace("watching","").strip()
         
         starlist = soup.find_all("a", href=f"{self.repo_url}/stargazers")
-        #print(f' Stars :  "{starlist[0].text.replace("stars","").replace("star","").strip()}"')
         data["stars"] = starlist[0].text.replace("stars","").replace("star","").strip()
+
+        spans = soup.find_all("span", {'class' : 'css-truncate-target'})
+        for span in spans:
+            if span.has_attr('data-menu-button'):
+                branch_name = span.text
+                break
         
-        comlist = soup.find_all("a", href=f"{self.repo_url}/commits/main")
-        #print(f' Commits :  "{comlist[0].text.replace("commits","").replace("commit","").strip()}"')
+        comlist = soup.find_all("a", href=f"{self.repo_url}/commits/{branch_name}")
         data["commits"] = comlist[0].text.replace("commits","").replace("commit","").strip()
 
-
         contrlist = soup.find_all("a", href=f"{self.repo_url}/graphs/contributors")
-        print(f' Contributors :  "{contrlist[0].text.replace("commits","").replace("commit","").strip()}"')
-        data["contributors"] = contrlist[0].text.replace("Contributors","").strip()
-
+        data["contributors"] = self._soup_extract(contrlist, ["Contributors"], default=1)
+        
+        data['branch'] = branch_name
 
         
         return data
+
+    def _soup_extract(self, datalist, replaces, strip=True, default=0, regexp=None):
+        try:
+            data = datalist[0].text
+            if regexp:
+                data = re.sub(regexp, "", data)
+            for replace in replaces:
+                data = data.replace(replace,"")
+            if strip:
+                data = data.strip()
+            return data
+        except Exception as e:
+            logging.debug(f"Exception when parsing {datalist}: {e}")
+            return default

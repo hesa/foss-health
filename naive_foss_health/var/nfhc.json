@@ -1,0 +1,18 @@
+{
+    "thresholds":
+    {
+	"stars": "10",
+	"contributors": "5",
+	"watchers": "0",
+	"releases": "0",
+	"commits": "100",
+	"forks": "5",
+	"tags": "0",
+	"pulls_open": "0",
+	"pulls_closed": "10",
+	"milestones": "0",
+	"labels": "0",
+	"issues_open": "0",
+	"issues_closed": "10"
+    }
+}
