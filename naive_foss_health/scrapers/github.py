@@ -9,16 +9,33 @@ from naive_foss_health.web import get_page
 from naive_foss_health.repo_interface import RepoScraper
 
 
+GITHUB_DOMAIN_EXPR = "github.com"
+
 class GitHubRepoScraper(RepoScraper):
 
-    def __init__(self, repo_url):
-        logging.debug("GH " + repo_url)
-        self.repo_url = repo_url.replace("https://github.com","")
-        self.index_page = get_page(repo_url)
-        self.issues_page = get_page(f'{repo_url}/issues')
-        self.pullrequest_page = get_page(f'{repo_url}/pulls')
-        
     
+    def __init__(self, repo_url):
+        logging.debug(f'GH  {repo_url}: {GITHUB_DOMAIN_EXPR in repo_url}')
+        if GITHUB_DOMAIN_EXPR in repo_url:
+            logging.debug('GH looks promising')
+            self.repo_url = repo_url.replace("https://github.com","")
+            self.index_page = get_page(repo_url)
+            self.issues_page = get_page(f'{repo_url}/issues')
+            self.pullrequest_page = get_page(f'{repo_url}/pulls')
+            logging.debug('GH created repo scraper for {repo_url}')
+        else:
+            logging.debug(f'GH FAILED creating repo scraper for {repo_url} since only {GITHUB_DOMAIN_EXPR} is supported by this scraper')
+            raise RepoScraperException(f'GitHubRepoScraperCould does not support {repo_url}')
+            
+        
+    @staticmethod
+    def url_expr():
+        return "github.com"
+    
+    @staticmethod
+    def repo_provider():
+        return "GitHub"
+
     def scan_repo(self):
         logging.debug("GH scan_repo()")
         data = {}
@@ -146,7 +163,8 @@ class GitHubRepoScraper(RepoScraper):
         data["tags"] = taglist[1].text.replace("tags","").replace("tag","").strip()
         
         rellist = soup.find_all("a", href=f"{self.repo_url}/releases")
-        data["releases"] = rellist[0].text.replace("Releases","").strip()
+#        data["releases"] = rellist[0].text.replace("Releases","").strip()
+        data["releases"] = self._soup_extract(rellist, ["Releases"])
         
         forklist = soup.find_all("a", href=f"{self.repo_url}/network/members")
         data["forks"] = self._soup_extract(forklist, ["forks", "fork"])
@@ -183,6 +201,8 @@ class GitHubRepoScraper(RepoScraper):
                 data = data.replace(replace,"")
             if strip:
                 data = data.strip()
+            if data == '':
+                data = default
             return data
         except Exception as e:
             logging.debug(f"Exception when parsing {datalist}: {e}")
