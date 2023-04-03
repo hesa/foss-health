@@ -59,12 +59,16 @@ def main():
         sys.exit(0)
 
     config = read_config(args.config)
-        
-    scraper = RepoScraperFactory.RepoScraper(args.url)
-    report = scraper.scan_repo()
-    analyzer = RepoAnalyzer(report, config.get("thresholds"))
-    analysis = analyzer.check()
     formatter = OutputFormatterFactory().formatter(args.output_format)
-    formatted = formatter.format(analysis)
+
+    try:
+        scraper = RepoScraperFactory.RepoScraper(args.url)
+        report = scraper.scan_repo()
+        analyzer = RepoAnalyzer(report, config.get("thresholds"))
+        analysis = analyzer.check()
+        formatted = formatter.format(analysis)
+        print(formatted)
+    except Exception as e:
+        formatted = formatter.format_error(str(e))
+        print(formatted)
     
-    print(formatted)
