@@ -10,3 +10,6 @@ class OutputFormatterYaml(OutputFormatter):
     def format(self, report):
         return yaml.safe_dump(report)
 
+    def format_error(self, message):
+        return yaml.safe_dump({ "error": { "message": message} }, indent=4)
+

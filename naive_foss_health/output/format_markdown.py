@@ -13,6 +13,7 @@ class OutputFormatterMarkdown(OutputFormatter):
     def _format_items(self, report):
         data = []
         data.append("## Variables")
+        data.append("")
         data.append("| Variable | Value | Threshold | Status |")
         data.append("|----------|-------|---------|----------|")
         for key,value in report.get("statuses").items():
@@ -24,9 +25,15 @@ class OutputFormatterMarkdown(OutputFormatter):
     
             data.append(f'| {key} | {item.get("actual")} | {item.get("threshold")} | {self._format_status(item.get("status"))} | ')
         return "\n".join(data)
-    
+
     def format(self, report):
-        
+        report_result = '# Result'
         items = self._format_items(report)
 
-        return items
+        return f'{report_result}\n{items}'
+
+    def format_error(self, message):
+        return f"""# Error
+{message}
+"""
+    

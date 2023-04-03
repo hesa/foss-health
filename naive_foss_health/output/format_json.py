@@ -10,3 +10,6 @@ class OutputFormatterJson(OutputFormatter):
     def format(self, report):
         return json.dumps(report, indent=4)
 
+    def format_error(self, message):
+        return json.dumps({ "error": { "message": message} }, indent=4)
+
