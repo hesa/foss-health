@@ -4,9 +4,11 @@ import urllib
 from pathlib import Path
 from requests_html import HTMLSession
 
+from naive_foss_health.exception import NfhcException
+from naive_foss_health.error import NETWORK_FAILURE
 import logging
 
-STORAGE_DIR=os.path.join(Path.home(), "tmp")
+STORAGE_DIR=os.path.join(Path.home(), ".cache/nfhc")
 
 def get_page(url):
 
@@ -37,4 +39,4 @@ def get_page(url):
                 f.write(response.content)
             return response.content
         except requests.exceptions.RequestException as e:
-            print(e)
+            raise NfhcException(NETWORK_FAILURE, f'Could not download: {html_page}\nOriginal exception: {e}')
