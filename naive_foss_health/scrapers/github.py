@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 
 from naive_foss_health.web import get_page
 from naive_foss_health.repo_interface import RepoScraper
-
+from naive_foss_health.repo_interface import RepoScraperException
 
 GITHUB_DOMAIN_EXPR = "github.com"
 
@@ -18,20 +18,21 @@ class GitHubRepoScraper(RepoScraper):
         logging.debug(f'GH  {repo_url}: {GITHUB_DOMAIN_EXPR in repo_url}')
         if GITHUB_DOMAIN_EXPR in repo_url:
             logging.debug('GH looks promising')
-            self.repo_url = repo_url.replace("https://github.com","")
-            self.index_page = get_page(repo_url)
-            self.issues_page = get_page(f'{repo_url}/issues')
-            self.pullrequest_page = get_page(f'{repo_url}/pulls')
+            self.repo_url = repo_url.replace("https://github.com","").replace(".git","")
+            self.repo_url_full = f'https://{GITHUB_DOMAIN_EXPR}/{self.repo_url}'
+            self.index_page = get_page(f'{self.repo_url_full}')
+            self.issues_page = get_page(f'{self.repo_url_full}/issues')
+            self.pullrequest_page = get_page(f'{self.repo_url_full}/pulls')
             logging.debug('GH created repo scraper for {repo_url}')
         else:
             logging.debug(f'GH FAILED creating repo scraper for {repo_url} since only {GITHUB_DOMAIN_EXPR} is supported by this scraper')
             raise RepoScraperException(f'GitHubRepoScraperCould does not support {repo_url}')
-            
-        
+
+
     @staticmethod
     def url_expr():
         return "github.com"
-    
+
     @staticmethod
     def repo_provider():
         return "GitHub"
