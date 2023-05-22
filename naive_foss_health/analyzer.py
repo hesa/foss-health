@@ -10,7 +10,10 @@ class RepoAnalyzer:
         self.thresholds = thresholds
 
     def _check_value(self, key):
-        logging.debug(f'compare: {self.report[key]} >= {self.thresholds[key]}')
+        logging.debug(f'compare:')
+        logging.debug(f'       : key    {key}')
+        logging.debug(f'       : report {self.report}')
+        logging.debug(f'       : expr   {self.report[key]} >= {self.thresholds[key]}')
         return {
             "check": key,
             'status': {
