@@ -49,6 +49,7 @@ def read_config(config):
     
 
 def main():
+    
     args = parse()
 
     if args.verbose:
@@ -72,3 +73,7 @@ def main():
         formatted = formatter.format_error(str(e))
         print(formatted)
     
+
+
+if __name__ == '__main__':
+    main()
