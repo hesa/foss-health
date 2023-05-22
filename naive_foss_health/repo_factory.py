@@ -17,7 +17,8 @@ class RepoScraperFactory:
             try:
                 logging.debug(f'trying to create {scraper.repo_provider} Scraper')
                 return scraper(repo)
-            except:
+            except Exception as e:
                 logging.debug(f'failed creating {scraper.repo_provider} Scraper')
+                logging.debug(f'Exception: {e})
 
         raise RepoScraperException(f'Could not find a scraper for: {repo}.\n   We have available scrapers for : {[ x.url_expr() for x in RepoScraperFactory.supported_scrapers() ]}' )
