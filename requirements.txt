@@ -2,3 +2,4 @@ requests_html
 beautifulsoup4
 bs4
 PyYAML
+humanfriendly
