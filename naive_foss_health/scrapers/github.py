@@ -1,4 +1,3 @@
-
 import logging
 import re
 
@@ -8,6 +7,7 @@ from bs4 import BeautifulSoup
 from naive_foss_health.web import get_page
 from naive_foss_health.repo_interface import RepoScraper
 from naive_foss_health.repo_interface import RepoScraperException
+from naive_foss_health.scrapers.utils import to_int
 
 GITHUB_DOMAIN_EXPR = "github.com"
 
@@ -155,13 +155,13 @@ class GitHubRepoScraper(RepoScraper):
                     data[variable] = value
 
         alist = soup.find_all("a", id="issues-tab")
-        data["issues"] = alist[0].text.replace("Issues","").strip()
+        data["issues"] = to_int(alist[0].text.replace("Issues","").strip())
 
         brlist = soup.find_all("a", href=f"{self.repo_url}/branches")
-        data["branches"] = brlist[1].text.replace("branches","").strip()
+        data["branches"] = to_int(brlist[1].text.replace("branches","").strip())
         
         taglist = soup.find_all("a", href=f"{self.repo_url}/tags")
-        data["tags"] = taglist[1].text.replace("tags","").replace("tag","").strip()
+        data["tags"] = to_int(taglist[1].text.replace("tags","").replace("tag","").strip())
         
         rellist = soup.find_all("a", href=f"{self.repo_url}/releases")
 #        data["releases"] = rellist[0].text.replace("Releases","").strip()
@@ -171,10 +171,10 @@ class GitHubRepoScraper(RepoScraper):
         data["forks"] = self._soup_extract(forklist, ["forks", "fork"])
 
         watchlist = soup.find_all("a", href=f"{self.repo_url}/watchers")
-        data['watchers'] = watchlist[0].text.replace("watching","").strip()
+        data['watchers'] = to_int(watchlist[0].text.replace("watching","").strip())
         
         starlist = soup.find_all("a", href=f"{self.repo_url}/stargazers")
-        data["stars"] = starlist[0].text.replace("stars","").replace("star","").strip()
+        data["stars"] = to_int(starlist[0].text.replace("stars","").replace("star","").strip())
 
         spans = soup.find_all("span", {'class' : 'css-truncate-target'})
         for span in spans:
@@ -183,7 +183,7 @@ class GitHubRepoScraper(RepoScraper):
                 break
         
         comlist = soup.find_all("a", href=f"{self.repo_url}/commits/{branch_name}")
-        data["commits"] = comlist[0].text.replace("commits","").replace("commit","").strip()
+        data["commits"] = to_int(comlist[0].text.replace("commits","").replace("commit","").strip())
 
         contrlist = soup.find_all("a", href=f"{self.repo_url}/graphs/contributors")
         data["contributors"] = self._soup_extract(contrlist, ["Contributors"], default=1)
@@ -204,7 +204,9 @@ class GitHubRepoScraper(RepoScraper):
                 data = data.strip()
             if data == '':
                 data = default
-            return data
+            return to_int(data)
         except Exception as e:
             logging.debug(f"Exception when parsing {datalist}: {e}")
             return default
+
+        
